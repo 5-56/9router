@@ -1,10 +1,18 @@
-import Database from "better-sqlite3";
 import { PRAGMA_SQL } from "../schema.js";
+import { loadBetterSqlite } from "../loadBetterSqlite.js";
 
 // Periodic checkpoint to keep WAL file small (avoid huge -wal/-shm growth)
 const CHECKPOINT_INTERVAL_MS = 60 * 1000;
 
+// better-sqlite3 is an optional native dependency: `npm install` silently skips
+// it on machines without build tools, on Node >= 24 driver.js refuses it on
+// purpose (SIGSEGV), and the CLI bundle strips it deliberately. It is loaded
+// lazily via loadBetterSqlite() — never via a static import/require — so the
+// bundler never resolves it at build time (middleware/proxy.js bundle included)
+// and absence stays a runtime MODULE_NOT_FOUND that driver.js catches before
+// falling back to node:sqlite/sql.js. See loadBetterSqlite.js for details.
 export function createBetterSqliteAdapter(filePath) {
+  const Database = loadBetterSqlite();
   const db = new Database(filePath);
   db.exec(PRAGMA_SQL);
   // Schema is created/synced by migrate.js after adapter init

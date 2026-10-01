@@ -37,6 +37,20 @@ export function copyStandaloneAssets({ projectRoot = process.cwd(), distDir = pr
     cpSync(serverWrapperSource, serverWrapperDestination, { force: true });
     console.log(`[standalone-assets] Copied custom-server.js to ${serverWrapperDestination}`);
   }
+
+  // better-sqlite3 is loaded via createRequire (see src/lib/db/adapters/betterSqliteAdapter.js),
+  // which escapes Next output-file tracing. Copy it explicitly when installed so the
+  // preferred native driver is available in standalone/Docker builds. When npm skipped
+  // the optional package (no build tools on the build machine) the copy is skipped too
+  // and the runtime falls back to node:sqlite/sql.js as designed.
+  const betterSqliteSource = resolve(projectRoot, "node_modules", "better-sqlite3");
+  const betterSqliteDestination = resolve(standaloneDir, "node_modules", "better-sqlite3");
+  if (existsSync(betterSqliteSource)) {
+    cpSync(betterSqliteSource, betterSqliteDestination, { recursive: true, force: true });
+    console.log(`[standalone-assets] Copied better-sqlite3 to ${betterSqliteDestination}`);
+  } else {
+    console.log("[standalone-assets] better-sqlite3 not installed — standalone build will fall back to node:sqlite/sql.js");
+  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === resolve(dirname(fileURLToPath(import.meta.url)), "copy-standalone-assets.mjs")) {

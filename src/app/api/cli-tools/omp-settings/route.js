@@ -7,6 +7,7 @@ import path from "path";
 import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { loadBetterSqlite } from "../../../../lib/db/loadBetterSqlite.js";
 
 const execAsync = promisify(exec);
 
@@ -126,8 +127,9 @@ export async function POST(request) {
     try {
       let Database;
       try {
-        const mod = await import("better-sqlite3");
-        Database = mod.default || mod;
+        // Lazy load keeps the build passing when the optional native
+        // bindings are absent — see loadBetterSqlite.js.
+        Database = loadBetterSqlite();
       } catch {
         // fallback ignored
       }

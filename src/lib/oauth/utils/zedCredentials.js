@@ -4,6 +4,7 @@ import { access, constants, readFile } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
 import { randomUUID } from "crypto";
+import { loadBetterSqlite } from "../../db/loadBetterSqlite.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -82,8 +83,9 @@ export async function readZedSystemId() {
 
 async function queryKvStore(dbPath, key) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Database = require("better-sqlite3");
+    // Lazy load keeps the build passing when the optional native bindings are
+    // absent — the sqlite3 CLI fallback below covers that case (loadBetterSqlite.js).
+    const Database = loadBetterSqlite();
     const db = new Database(dbPath, { readonly: true, fileMustExist: true });
     try {
       const row = db.prepare("SELECT value FROM kv_store WHERE key = ? LIMIT 1").get(key);

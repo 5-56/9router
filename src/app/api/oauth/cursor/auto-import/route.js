@@ -4,6 +4,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { loadBetterSqlite } from "../../../../../lib/db/loadBetterSqlite.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -77,9 +78,9 @@ const normalize = (value) => {
  * This is the preferred strategy — no external CLI required.
  */
 function extractTokensViaBetterSqlite(dbPath) {
-  // Dynamic require so the route stays importable even if native bindings fail
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Database = require("better-sqlite3");
+  // Lazy load keeps the route importable (and the build passing) when the
+  // optional native bindings are absent — see loadBetterSqlite.js.
+  const Database = loadBetterSqlite();
   const db = new Database(dbPath, { readonly: true, fileMustExist: true });
 
   const query = (key) => {
